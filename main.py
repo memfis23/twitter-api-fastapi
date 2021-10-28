@@ -54,12 +54,9 @@ class Tweet(BaseModel):
 
 # Path Operations
 
-@app.get(path="/")
-def home():
-    return {"Twitter API": "Working!"}
-
 ## Users
 
+### Register a user
 @app.post(
     path="/singup",
     response_model=User,
@@ -70,6 +67,7 @@ def home():
 def signup():
     pass
 
+### Login a user
 @app.post(
     path="/login",
     response_model=User,
@@ -80,6 +78,7 @@ def signup():
 def login():
     pass
 
+### Show all users
 @app.get(
     path="/users",
     response_model=List[User],
@@ -90,6 +89,7 @@ def login():
 def show_all_users():
     pass
 
+### Show a user
 @app.get(
     path="/users/{user_id}",
     response_model=User,
@@ -100,6 +100,7 @@ def show_all_users():
 def show_a_user():
     pass
 
+### Delete a user
 @app.delete(
     path="/users/{user_id}/delete",
     response_model=User,
@@ -107,17 +108,18 @@ def show_a_user():
     summary="Register a User",
     tags=["Users"]
 )
-def signup():
+def delete_a_user():
     pass
 
-@app.post(
-    path="/singup",
+### Update a user
+@app.put(
+    path="/users/{user_id}/update",
     response_model=User,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a User",
+    status_code=status.HTTP_200_OK,
+    summary="Update a User",
     tags=["Users"]
 )
-def signup():
+def update_a_user():
     pass
 
 ## Tweets
