@@ -13,7 +13,7 @@ from pydantic import Field
 # FastAPI
 from fastapi import FastAPI
 from fastapi import status
-from fastapi import Body
+from fastapi import Body, Form, Path
 
 app = FastAPI()
 
@@ -61,6 +61,17 @@ class Tweet(BaseModel):
     updated_at: Optional[datetime] = Field(default=None)
     by: User = Field(...)
 
+class LoginOut(BaseModel): 
+    email: EmailStr = Field(...)
+    message: str = Field(default="Login Succesfully!")
+
+# Functions
+
+def show_users_tweets():
+    with open("users.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        return results
+
 # Path Operations
 
 ## Users
@@ -104,13 +115,31 @@ def signup(user: UserRegister = Body(...)):
 ### Login a user
 @app.post(
     path="/login",
-    response_model=User,
+    response_model=LoginOut,
     status_code=status.HTTP_200_OK,
     summary="Login a User",
     tags=["Users"]
 )
-def login():
-    pass
+def login(email: EmailStr = Form(...), password: str = Form(...)):
+    """
+    Login
+
+    This path operation login a Person in the app
+
+    Parameters:
+    - Request body parameters:
+        - email: EmailStr
+        - password: str
+
+    Returns a LoginOut model with username and message
+    """
+    with open("users.json", "r", encoding="utf-8") as f:
+        data = json.loads(f.read())
+        for user in data:
+            if email == user['email'] and password == user['password']:
+                return LoginOut(email=email)
+        else:
+            return {"message": "Login Unsuccesfully!"}
 
 ### Show all users
 @app.get(
@@ -122,6 +151,8 @@ def login():
 )
 def show_all_users():
     """
+    Show all Users
+
     This path operation shows all users in the app
 
     Parameters:
@@ -134,9 +165,10 @@ def show_all_users():
         - last_name: str
         - birth_date: datetime
     """
-    with open("users.json", "r", encoding="utf-8") as f:
-        results = json  .loads(f.read())
-        return results
+    # with open("users.json", "r", encoding="utf-8") as f:
+    #     results = json.loads(f.read())
+    #     return results
+    show_users_tweets()
 
 ### Show a user
 @app.get(
@@ -182,7 +214,24 @@ def update_a_user():
     tags=["Tweets"]
 )
 def home():
-    return {"Twitter API": "Working!"}
+    """
+    Show all Tweets
+
+    This path operation shows all tweets in the app
+
+    Parameters:
+        -
+
+    Returns a json list with all tweets in the app, with the followings keys:
+        tweet_id: UUID
+        content: str 
+        created_at: datetime 
+        updated_at: Optional[datetime]
+        by: User
+    """
+    with open("tweets.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        return results
 
 ### Post a tweet
 @app.post(
