@@ -3,7 +3,7 @@ import json
 from uuid import UUID
 from datetime import date
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, cast
 
 # Pydantic
 from pydantic import BaseModel
@@ -168,44 +168,43 @@ def show_all_users():
     """
     return show_users_tweets("users")
 
-### Show a user
-# @app.get(
-#     path="/users/{user_id}",
-#     # response_model=User,
-#     status_code=status.HTTP_200_OK,
-#     summary="Show a User",
-#     tags=["Users"]
-# )
-# def show_a_user(
-#     user_id: UUID = Path(
-#         ...,
-#         title="User ID",
-#         description="This is the user ID",
-#         example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
-#     )
-# ):
-#     """
-#     Show a User
+## Show a user
+@app.get(
+    path="/users/{user_id}",
+    response_model=User,
+    status_code=status.HTTP_200_OK,
+    summary="Show a User",
+    tags=["Users"]
+)
+def show_a_user(
+    user_id: UUID = Path(
+        ...,
+        title="User ID",
+        description="This is the user ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    )
+):
+    """
+    Show a User
 
-#     This path operation show if a person exist in the app
+    This path operation show if a person exist in the app
 
-#     Parameters:
-#         - user_id: UUID
+    Parameters:
+        - user_id: UUID
 
-#     Returns a User model with first_name, last_name and birth_date
-#     """
-#     with open("users.json", "r", encoding="utf-8") as f:
-#         data = json.loads(f.read())
-#         for user in data:
-#             if user_id == user['user_id']:
-#                 return {user_id: "It exist!"}
-#         else:
-#             return {user_id: "It doesn't exits!"}
-        # else:
-        #     raise HTTPException(
-        #     status_code=status.HTTP_404_NOT_FOUND,
-        #     detail="¡This user doesn't exist!"
-        # )  
+    Returns a User model with first_name, last_name and birth_date
+    """
+    with open("users.json", "r", encoding="utf-8") as f:
+        data = json.loads(f.read())
+        user_id = str(user_id)
+        for user in data:
+            if user_id == user["user_id"]:
+                return user
+        else:
+            raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="¡This user doesn't exist!"
+        )  
 
 ### Delete a user
 @app.delete(
