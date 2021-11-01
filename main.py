@@ -70,8 +70,7 @@ class LoginOut(BaseModel):
 
 def show_users_tweets(data):
     with open(f"{data}.json", "r", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        return results
+        return json.loads(f.read())
 
 # Path Operations
 
@@ -140,7 +139,7 @@ def login(email: EmailStr = Form(...), password: str = Form(...)):
             if email == user['email'] and password == user['password']:
                 return LoginOut(email=email)
         else:
-            return {"message": "Login Unsuccesfully!"}
+            return LoginOut(email=email, message="Login Unsuccesfully!")
 
 ### Show all users
 @app.get(
@@ -194,14 +193,13 @@ def show_a_user(
 
     Returns a User model with first_name, last_name and birth_date
     """
-    with open("users.json", "r", encoding="utf-8") as f:
-        data = json.loads(f.read())
-        user_id = str(user_id)
-        for user in data:
-            if user_id == user["user_id"]:
-                return user
-        else:
-            raise HTTPException(
+    data = show_users_tweets("users")
+    user_id = str(user_id)
+    for user in data:
+        if user_id == user["user_id"]:
+            return user
+    else:
+        raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="¡This user doesn't exist!"
         )  
