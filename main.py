@@ -78,6 +78,32 @@ def overwrite_data(file, result_list):
         f.seek(0)
         f.write(json.dumps(result_list))
 
+def show_data(file, id, info):
+    results = read_data(file)
+    id = str(id)
+    for data in results:
+        if data[f"{info}_id"] == id:
+            return data
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"¡This {info} doesn't exist!"
+        )
+
+def delete_data(file, id, info):
+    results = read_data(file)
+    id = str(id)
+    for data in results:
+        if data[f"{info}_id"] == id:
+            results.remove(data)
+            overwrite_data(file, results)
+            return data
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"¡This {info} doesn't exist!"
+        )
+
 # Path Operations
 
 ## Users
@@ -201,16 +227,7 @@ def show_a_user(
         - last_name: str
         - birth_date: datetime
     """
-    data = read_data("users")
-    user_id = str(user_id)
-    for user in data:
-        if user_id == user["user_id"]:
-            return user
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="¡This user doesn't exist!"
-        )  
+    return show_data("users", user_id, "user")
 
 ### Delete a user
 @app.delete(
@@ -243,18 +260,7 @@ def delete_a_user(
         - last_name: str
         - birth_date: datetime
     """
-    results = read_data("users")
-    user_id = str(user_id)
-    for user in results:
-        if user["user_id"] == user_id:
-            results.remove(user)
-            overwrite_data('users', results)
-            return user
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="¡This person doesn't exist!"
-        )
+    return delete_data("users", user_id, "user")
 
 ### Update a user
 @app.put(
@@ -281,9 +287,9 @@ def update_a_user(
     Parameters:
     - user_id: UUID
     - Request body parameter:
-        - **user: User** -> A user model with first name, last name and birth date
+        - **user: User** -> A user model with user_id, email, first name, last name, birth date and password
     
-    Returns a user model with first name, last name and birth date
+    Returns a user model with user_id, email, first_name, last_name and birth_date
     """
     user_id = str(user_id)
     user_dict = user.dict()
@@ -292,11 +298,12 @@ def update_a_user(
     results = read_data("users")
     for user in results:
         if user["user_id"] == user_id:
-            user["email"] = user_dict["email"]
-            user["first_name"] = user_dict["first_name"]
-            user["last_name"] = user_dict["last_name"]
-            user["birth_date"] = user_dict["birth_date"]
-            user["password"] = user_dict["password"]
+            # user["email"] = user_dict["email"]
+            # user["first_name"] = user_dict["first_name"]
+            # user["last_name"] = user_dict["last_name"]
+            # user["birth_date"] = user_dict["birth_date"]
+            # user["password"] = user_dict["password"]
+            results[results.index(user)] = user_dict
             overwrite_data('users', results)
             return user
     else:
@@ -358,19 +365,17 @@ def post(tweet: Tweet = Body(...)):
         updated_at: Optional[datetime]
         by: User
     """
-    with open("tweets.json", "r+", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        tweet_dict = tweet.dict()
-        tweet_dict["tweet_id"] = str(tweet_dict["tweet_id"])
-        tweet_dict["created_at"] = str(tweet_dict["created_at"])
-        tweet_dict["updated_at"] = str(tweet_dict["updated_at"])
-        tweet_dict["by"]["user_id"] = str(tweet_dict["by"]["user_id"])
-        tweet_dict["by"]["birth_date"] = str(tweet_dict["by"]["birth_date"])
+    results = read_data("tweets")
+    tweet_dict = tweet.dict()
+    tweet_dict["tweet_id"] = str(tweet_dict["tweet_id"])
+    tweet_dict["created_at"] = str(tweet_dict["created_at"])
+    tweet_dict["updated_at"] = str(tweet_dict["updated_at"])
+    tweet_dict["by"]["user_id"] = str(tweet_dict["by"]["user_id"])
+    tweet_dict["by"]["birth_date"] = str(tweet_dict["by"]["birth_date"])
 
-        results.append(tweet_dict)
-        f.seek(0)
-        f.write(json.dumps(results))
-        return tweet
+    results.append(tweet_dict)
+    overwrite_data("tweets", results)
+    return tweet
 
 ### Show a tweet
 @app.get(
@@ -380,8 +385,30 @@ def post(tweet: Tweet = Body(...)):
     summary="Show a tweet",
     tags=["Tweets"]
 )
-def show_a_tweet(): 
-    pass
+def show_a_tweet(
+    tweet_id: UUID = Path(
+        ...,
+        title="Tweet ID",
+        description="This is the tweet ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa9"
+    )
+): 
+    """
+    Show a Tweet
+
+    This path operation show if a tweet exist in the app
+
+    Parameters:
+        - tweet_id: UUID
+
+    Returns a json with tweet data:
+        - tweet_id: UUID
+        - content: str
+        - created_at: datetime
+        - updated_at: Optional[datetime]
+        - by: User
+    """
+    return show_data("tweets", tweet_id, "tweet")
 
 ### Delete a tweet
 @app.delete(
@@ -391,8 +418,30 @@ def show_a_tweet():
     summary="Delete a tweet",
     tags=["Tweets"]
 )
-def delete_a_tweet(): 
-    pass
+def delete_a_tweet(
+    tweet_id: UUID = Path(
+        ...,
+        title="Tweet ID",
+        description="This is the tweet ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa9"
+    )
+): 
+    """
+    Delete a Tweet
+
+    This path operation delete a tweet in the app
+
+    Parameters:
+        - tweet_id: UUID
+
+    Returns a json with deleted tweet data:
+        - tweet_id: UUID
+        - content: str
+        - created_at: datetime
+        - updated_at: Optional[datetime]
+        - by: User
+    """
+    return delete_data("tweets", tweet_id, "tweet")
 
 ### Update a tweet
 @app.put(
