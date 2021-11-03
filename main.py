@@ -1,5 +1,6 @@
 # Python
 import json
+from os import remove
 from uuid import UUID
 from datetime import date
 from datetime import datetime
@@ -68,9 +69,13 @@ class LoginOut(BaseModel):
 
 # functions
 
-def show_users_tweets(data):
+def read_data(data):
     with open(f"{data}.json", "r", encoding="utf-8") as f:
         return json.loads(f.read())
+
+def overwrite_data(data, result_list):
+    with open(f"{data}.json", "w", encoding="utf-8") as f:
+        f.write(json.dumps(result_list))
 
 # Path Operations
 
@@ -133,13 +138,12 @@ def login(email: EmailStr = Form(...), password: str = Form(...)):
 
     Returns a LoginOut model with username and message
     """
-    with open("users.json", "r", encoding="utf-8") as f:
-        data = json.loads(f.read())
-        for user in data:
-            if email == user['email'] and password == user['password']:
-                return LoginOut(email=email)
-        else:
-            return LoginOut(email=email, message="Login Unsuccesfully!")
+    data = read_data("users")
+    for user in data:
+        if email == user['email'] and password == user['password']:
+            return LoginOut(email=email)
+    else:
+        return LoginOut(email=email, message="Login Unsuccesfully!")
 
 ### Show all users
 @app.get(
@@ -165,7 +169,7 @@ def show_all_users():
         - last_name: str
         - birth_date: datetime
     """
-    return show_users_tweets("users")
+    return read_data("users")
 
 ## Show a user
 @app.get(
@@ -191,9 +195,14 @@ def show_a_user(
     Parameters:
         - user_id: UUID
 
-    Returns a User model with first_name, last_name and birth_date
+    Returns a json with user data:
+        - user_id: UUID
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
     """
-    data = show_users_tweets("users")
+    data = read_data("users")
     user_id = str(user_id)
     for user in data:
         if user_id == user["user_id"]:
@@ -208,12 +217,45 @@ def show_a_user(
 @app.delete(
     path="/users/{user_id}/delete",
     response_model=User,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a User",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a User",
     tags=["Users"]
 )
-def delete_a_user():
-    pass
+def delete_a_user(
+    user_id: UUID = Path(
+        ...,
+        title="User ID",
+        description="This is the user ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa9"
+    )
+):
+    """
+    Delete a User
+
+    This path operation delete a user in the app
+
+    Parameters:
+        - user_id: UUID
+
+    Returns a json with deleted user data:
+        - user_id: UUID
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
+    """
+    results = read_data("users")
+    user_id = str(user_id)
+    for user in results:
+        if user["user_id"] == user_id:
+            results.remove(user)
+            overwrite_data('users', results)
+            return user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="¡This person doesn't exist!"
+        )
 
 ### Update a user
 @app.put(
@@ -252,7 +294,7 @@ def home():
         updated_at: Optional[datetime]
         by: User
     """
-    return show_users_tweets("tweets")
+    return read_data("tweets")
 
 ### Post a tweet
 @app.post(
