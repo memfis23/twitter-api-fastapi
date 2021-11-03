@@ -4,7 +4,7 @@ from os import remove
 from uuid import UUID
 from datetime import date
 from datetime import datetime
-from typing import Optional, List, cast
+from typing import Optional, List
 
 # Pydantic
 from pydantic import BaseModel
@@ -67,14 +67,15 @@ class LoginOut(BaseModel):
     email: EmailStr = Field(...)
     message: str = Field(default="Login Succesfully!")
 
-# functions
+# Auxiliar functions
 
-def read_data(data):
-    with open(f"{data}.json", "r", encoding="utf-8") as f:
+def read_data(file):
+    with open(f"{file}.json", "r+", encoding="utf-8") as f:
         return json.loads(f.read())
 
-def overwrite_data(data, result_list):
-    with open(f"{data}.json", "w", encoding="utf-8") as f:
+def overwrite_data(file, result_list):
+    with open(f"{file}.json", "w", encoding="utf-8") as f:
+        f.seek(0)
         f.write(json.dumps(result_list))
 
 # Path Operations
@@ -106,15 +107,13 @@ def signup(user: UserRegister = Body(...)):
         - last_name: str
         - birth_date: datetime
     """
-    with open("users.json", "r+", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        user_dict = user.dict()
-        user_dict["user_id"] = str(user_dict["user_id"])
-        user_dict["birth_date"] = str(user_dict["birth_date"])
-        results.append(user_dict)
-        f.seek(0)
-        f.write(json.dumps(results))
-        return user
+    results = read_data("users")
+    user_dict = user.dict()
+    user_dict["user_id"] = str(user_dict["user_id"])
+    user_dict["birth_date"] = str(user_dict["birth_date"])
+    results.append(user_dict)
+    overwrite_data("users", results)
+    return user
 
 
 ### Login a user
@@ -265,8 +264,46 @@ def delete_a_user(
     summary="Update a User",
     tags=["Users"]
 )
-def update_a_user():
-    pass
+def update_a_user(
+    user_id: UUID = Path(
+        ...,
+        title="User ID",
+        description="This is the user ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ),
+    user: UserRegister = Body(...)
+):
+    """
+    Update User
+
+    This path operation update a user information in the app and save in the database
+
+    Parameters:
+    - user_id: UUID
+    - Request body parameter:
+        - **user: User** -> A user model with first name, last name and birth date
+    
+    Returns a user model with first name, last name and birth date
+    """
+    user_id = str(user_id)
+    user_dict = user.dict()
+    user_dict["user_id"] = str(user_dict["user_id"])
+    user_dict["birth_date"] = str(user_dict["birth_date"])
+    results = read_data("users")
+    for user in results:
+        if user["user_id"] == user_id:
+            user["email"] = user_dict["email"]
+            user["first_name"] = user_dict["first_name"]
+            user["last_name"] = user_dict["last_name"]
+            user["birth_date"] = user_dict["birth_date"]
+            user["password"] = user_dict["password"]
+            overwrite_data('users', results)
+            return user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="¡This person doesn't exist!"
+        )
 
 ## Tweets
 
