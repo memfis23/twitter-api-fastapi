@@ -298,11 +298,6 @@ def update_a_user(
     results = read_data("users")
     for user in results:
         if user["user_id"] == user_id:
-            # user["email"] = user_dict["email"]
-            # user["first_name"] = user_dict["first_name"]
-            # user["last_name"] = user_dict["last_name"]
-            # user["birth_date"] = user_dict["birth_date"]
-            # user["password"] = user_dict["password"]
             results[results.index(user)] = user_dict
             overwrite_data('users', results)
             return user
@@ -486,8 +481,7 @@ def update_a_tweet(
     results = read_data("tweets")
     for tweet in results:
         if tweet['tweet_id'] == tweet_id:
-            if content:
-                tweet['content'] = content
+            tweet['content'] = content
             tweet['updated_at'] = str(datetime.now())
             print(tweet)
             overwrite_data("tweets", results)
