@@ -104,6 +104,14 @@ def delete_data(file, id, info):
             detail=f"¡This {info} doesn't exist!"
         )
 
+def read_tweets_ids(tweets):
+    ids = []
+
+    for tweet in tweets:
+        ids.append(tweet["tweet_id"])
+    
+    return ids
+
 # Path Operations
 
 ## Users
@@ -309,7 +317,7 @@ def update_a_user(
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="¡This person doesn't exist!"
+            detail="¡This user doesn't exist!"
         )
 
 ## Tweets
@@ -359,11 +367,11 @@ def post(tweet: Tweet = Body(...)):
             - tweet: Tweet
     
     Returns a json with the basic tweet information: 
-        tweet_id: UUID
-        content: str 
-        created_at: datetime 
-        updated_at: Optional[datetime]
-        by: User
+        - tweet_id: UUID
+        - content: str 
+        - created_at: datetime 
+        - updated_at: Optional[datetime]
+        - by: User
     """
     results = read_data("tweets")
     tweet_dict = tweet.dict()
@@ -451,5 +459,49 @@ def delete_a_tweet(
     summary="Update a tweet",
     tags=["Tweets"]
 )
-def update_a_tweet(): 
-    pass
+def update_a_tweet(
+    tweet_id: UUID = Path(
+        ...,
+        title="User ID",
+        description="This is the tweet ID",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa9"
+    ),
+    content: str = Form(
+        ..., 
+        min_length=1,
+        max_length=256,
+        title="Tweet content",
+        description="This is the content of the tweet",
+    )
+): 
+    """
+    Update Tweet
+
+    This path operation update a tweet information in the app and save in the database
+
+    Parameters:
+    - tweet_id: UUID
+    - content: str
+    
+    Returns a json with:
+        - tweet_id: UUID
+        - content: str 
+        - created_at: datetime 
+        - updated_at: datetime
+        - by: user: User
+    """
+    tweet_id = str(tweet_id)
+    results = read_data("tweets")
+    for tweet in results:
+        if tweet['tweet_id'] == tweet_id:
+            if content:
+                tweet['content'] = content
+            tweet['updated_at'] = str(datetime.now())
+            print(tweet)
+            overwrite_data("tweets", results)
+            return tweet
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This tweet doesn't exist!"
+        )
