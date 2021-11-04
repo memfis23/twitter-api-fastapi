@@ -104,14 +104,6 @@ def delete_data(file, id, info):
             detail=f"¡This {info} doesn't exist!"
         )
 
-def read_tweets_ids(tweets):
-    ids = []
-
-    for tweet in tweets:
-        ids.append(tweet["tweet_id"])
-    
-    return ids
-
 # Path Operations
 
 ## Users
